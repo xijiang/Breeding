@@ -79,7 +79,7 @@ double Amat(int i, int j, const PED &ped, MID&mid){
 }
 
 void DnT(const PED&ped, MID&mid){
-  ofstream dfile{"D.vec"}, tfile{"Ti.mat"};
+  ofstream dfile{"D.vec"}, tfile{"T.mat"};
   vector<double> F(ped.size());
   size_t id;
 
