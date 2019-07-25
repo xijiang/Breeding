@@ -16,6 +16,7 @@ bool nARG(int argc, string cmd){
     cerr<<"\n where options:\n";
     cerr<<"     A/a: calculate A matrix, output binary format\n";
     cerr<<"     F/f: inbreeding values of the ID\n";
+    cerr<<"     T/t: diagonal D inverse and T inverse for calculation A inverse\n";
     //cerr<<"     V/v: inverse of the A matrix\n";
     return false;
   }
@@ -77,6 +78,35 @@ double Amat(int i, int j, const PED &ped, MID&mid){
   return mid[{i, j}];
 }
 
+void DnT(const PED&ped, MID&mid){
+  ofstream dfile{"D.vec"}, tfile{"Ti.mat"};
+  vector<double> F(ped.size());
+  size_t id;
+
+  dfile<<fixed;
+  dfile.precision(12);
+  
+  // Inbred coefficient first
+  F[0] = -1;			// this will avoid the if else things
+  for(id=1; id<ped.size(); ++id) F[id] = Amat(id, id, ped, mid) - 1;
+
+  // directly write D and Ti to file
+  for(id=1; id<ped.size(); ++id){
+    const auto&[pa, ma] = ped[id];
+
+    // D inverse
+    dfile << 1./(.5 - .25*(F[pa] + F[ma])) << '\n';
+
+    // T inverse
+    auto putT = [](int a, int b, int c, ostream&tfile){
+		  if(a) tfile << c << ' ' << a << ' ' << -.5 << '\n';
+		  if(b) tfile << c << ' ' << b << ' ' << -.5 << '\n';
+		  tfile       << c << ' ' << c << ' ' <<   1 << '\n';
+		};
+    if(pa<ma) putT(pa, ma, id, tfile);
+    else      putT(ma, pa, id, tfile);
+  }
+}
 
 int main(int argc, char *argv[])
 {
@@ -86,13 +116,13 @@ int main(int argc, char *argv[])
   if(!read_ped(cin, ped)) return 2;
 
   vector<int> ilist;
-  if(!read_list(argv[2], ilist, ped.size()-1)) return 3;
   map<PM, double> mid;		// store the mid results of Amat
   
   switch(argv[1][0]){
   case 'A':
   case 'a':
-    // calculate A of listed ID
+    clog<<"Calculate A matrix of listed ID\n";
+    if(!read_list(argv[2], ilist, ped.size()-1)) return 3;
     for(auto&i:ilist)
       for(auto&j:ilist){
 	if(j>i) break;
@@ -102,10 +132,19 @@ int main(int argc, char *argv[])
     
   case 'F':
   case 'f':
-    // calculate inbreeding values of listed ID
+    clog<<"Calculate inbreeding values of listed ID\n";
+    if(!read_list(argv[2], ilist, ped.size()-1)) return 3;
     for(auto&id:ilist) cout<<id<<'\t'<<Amat(id, id, ped, mid) - 1<<'\n';
     break;
 
+  case 'T':
+  case 't':
+    clog<<"Calculate inverse D and T matrix for inverse A construction\n";
+    clog<<"Results are in D.vec and Ti.mat.\n";
+    clog<<"ToDo: this dirty method now only calculate those for a full pedigree.\n";
+    DnT(ped, mid);
+    break;
+    
   default:
     cerr<<"ERROR: Invalid option \'"<<argv[1]<<"\'\n";
     return 4;
