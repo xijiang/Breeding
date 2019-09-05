@@ -46,14 +46,11 @@ bool read_list(string file, vector<int>&ilist, size_t nid){
   ifstream fin(file);
     
   for(int id; fin>>id; ilist.push_back(id)){
-    if(id>static_cast<int>(nid) || id<0 || id<=oid){
+    if(id>static_cast<int>(nid) || id<0){
       cerr<<"ERROR: ID not in the pedigree\n";
       return false;		// id must be in 1:nid and sorted
     }
-    if(id<=oid){
-      cerr<<"ERROR: ID list not sorted\n";
-      return false;
-    }
+    if(id<=oid) clog<<"Warning: ID list not sorted\n";
     oid = id;
   }
   return true;
@@ -78,24 +75,25 @@ double Amat(int i, int j, const PED &ped, MID&mid){
   return mid[{i, j}];
 }
 
-void DnT(const PED&ped, MID&mid){
+void DnT(const PED&ped, MID&mid, vector<int>&ilist){
   ofstream dfile{"D.vec"}, tfile{"T.mat"};
-  vector<double> F(ped.size());
-  size_t id;
+  // Inbred coefficients of parents of ilist
+  map<int, double> pma;
+  pma[0] = -1;
+  for(const auto&id:ilist){
+    const auto&[pa, ma] = ped[id];
+    if(pma.find(pa)==pma.end()) pma[pa] = Amat(pa, pa, ped, mid) -1;
+    if(pma.find(ma)==pma.end()) pma[ma] = Amat(ma, ma, ped, mid) -1;
+  }
 
-  dfile<<fixed;
   dfile.precision(12);
-  
-  // Inbred coefficient first
-  F[0] = -1;			// this will avoid the if else things
-  for(id=1; id<ped.size(); ++id) F[id] = Amat(id, id, ped, mid) - 1;
 
   // directly write D and Ti to file
-  for(id=1; id<ped.size(); ++id){
+  for(const auto&id:ilist){
     const auto&[pa, ma] = ped[id];
 
     // D inverse
-    dfile << 1./(.5 - .25*(F[pa] + F[ma])) << '\n';
+    dfile << 1./(.5 - .25*(pma[pa] + pma[ma])) << '\n';
 
     // T inverse
     auto putT = [](int a, int b, int c, ostream&tfile){
@@ -141,8 +139,8 @@ int main(int argc, char *argv[])
   case 't':
     clog<<"Calculate inverse D and T matrix for inverse A construction\n";
     clog<<"Results are in D.vec and Ti.mat.\n";
-    clog<<"ToDo: this dirty method now only calculate those for a full pedigree.\n";
-    DnT(ped, mid);
+    if(!read_list(argv[2], ilist, ped.size()-1)) return 3;
+    DnT(ped, mid, ilist);
     break;
     
   default:
