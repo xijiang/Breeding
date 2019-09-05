@@ -47,11 +47,7 @@ bool read_list(string file, vector<int>&ilist, size_t nid){
     }
     oid = id;
   }
-  if(ilist.size())  return true;
-  else{
-    cerr<<"Forgot to remove header lines?\n";
-    return false;
-  }
+  return true;
 }
 
 
