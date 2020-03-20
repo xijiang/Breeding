@@ -44,7 +44,10 @@ bool read_list(string file, vector<int>&ilist, size_t nid){
   
   int oid{0};
   ifstream fin(file);
-    
+  if(!fin.is_open()){
+    cerr << "File not exists\n";
+    return false;
+  }
   for(int id; fin>>id; ilist.push_back(id)){
     if(id>static_cast<int>(nid) || id<0){
       cerr<<"ERROR: ID not in the pedigree\n";
