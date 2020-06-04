@@ -7,8 +7,8 @@ using namespace std;
 int main(int argc, char *argv[])
 {
   ios_base::sync_with_stdio(false);
-  const int MLC{1'000'000}
-  int       NL{1'000};
+  const int MLC{1000000};
+  int       NL{1000};
   if(argc==2) NL = stoi(argv[1]);
   double    frq[MLC]{0};
   ofstream  foo, fid("id.txt");
